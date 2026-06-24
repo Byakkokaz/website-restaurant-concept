@@ -205,6 +205,7 @@ function initBackToTop() {
         }
     }, { passive: true });
 
+    
     // Initialize on load
     updateScrollProgress();
 }
