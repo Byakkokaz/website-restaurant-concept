@@ -1,4 +1,3 @@
-// 1. Dynamic Page Loader - Executed IMMEDIATELY when the script runs
 const loader = document.createElement('div');
 loader.className = 'page-loader';
 loader.innerHTML = `
@@ -23,21 +22,19 @@ loader.innerHTML = `
     </div>
 `;
 
-// Extremely safe append: falls back to documentElement if body is temporarily null during early parsing
 if (document.body) {
     document.body.appendChild(loader);
 } else {
     document.documentElement.appendChild(loader);
 }
 
-// Fade out loader once the whole page is fully loaded
 function hideLoader() {
     setTimeout(() => {
         loader.classList.add('fade-out');
         setTimeout(() => {
             loader.remove();
-        }, 600); // matches CSS transition duration
-    }, 1500); // Set to 1.5 seconds minimum animation duration
+        }, 600); 
+    }, 1500); 
 }
 
 if (document.readyState === 'complete') {
@@ -46,18 +43,14 @@ if (document.readyState === 'complete') {
     window.addEventListener('load', hideLoader);
 }
 
-// 2. Initialize Website Interactions (Scroll Spy, Smooth Scroll, etc.)
 function initInteractions() {
-    // Set copyright year
     const year = document.getElementById("year");
     if (year) {
         year.textContent = new Date().getFullYear();
     }
 
-    // Navigation links
     const navLinks = document.querySelectorAll('nav ul li a, .footer-link ul li a');
     
-    // DOM-ordered target sections (Beranda, Tentang, Menu, Pesan, Kontak)
     const sections = [
         { el: document.querySelector('.intro-section'), name: 'beranda' },
         { el: document.querySelector('.about-section'), name: 'tentang' },
@@ -69,7 +62,6 @@ function initInteractions() {
     let isScrolling = false;
     let scrollTimeout = null;
 
-    // Smooth scroll event handler
     navLinks.forEach(link => {
         link.addEventListener('click', function(e) {
             const href = this.getAttribute('href');
@@ -94,13 +86,12 @@ function initInteractions() {
                     isScrolling = true;
                     if (scrollTimeout) clearTimeout(scrollTimeout);
 
-                    // Update active state class immediately
+                   
                     document.querySelectorAll('nav ul li a').forEach(a => a.classList.remove('current'));
                     
                     if (this.closest('nav')) {
                         this.classList.add('current');
                     } else {
-                        // Find matching nav link for footer link click
                         document.querySelectorAll('nav ul li a').forEach(a => {
                             if (a.textContent.trim().toLowerCase() === linkText) {
                                 a.classList.add('current');
@@ -123,21 +114,20 @@ function initInteractions() {
         });
     });
 
-    // Scroll Spy (Dynamic navigation highlight on scroll)
     window.addEventListener('scroll', () => {
-        if (isScrolling) return; // Ignore scroll-spy checks when scrolling is initiated by clicking links
+        if (isScrolling) return; 
         
         let currentSection = 'beranda';
-        const scrollPos = window.scrollY + 220; // offset for sticky header height & buffer
+        const scrollPos = window.scrollY + 220; 
 
-        // Find current section based on offsetTop position
+        
         sections.forEach(sec => {
             if (sec.el && scrollPos >= sec.el.offsetTop) {
                 currentSection = sec.name;
             }
         });
 
-        // Set the active navigation styling
+   
         document.querySelectorAll('nav ul li a').forEach(a => {
             const text = a.textContent.trim().toLowerCase();
             if (text === currentSection) {
@@ -149,9 +139,72 @@ function initInteractions() {
     });
 }
 
-// Run interactions when DOM is ready
-if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initInteractions);
-} else {
+
+function initAll() {
     initInteractions();
+    initBackToTop();
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initAll);
+} else {
+    initAll();
+}
+
+/* ============================================================
+   BACK TO TOP — Scroll Progress Ring
+   ============================================================ */
+function initBackToTop() {
+    const btn    = document.getElementById('back-to-top');
+    const circle = document.getElementById('btt-circle');
+
+    if (!btn || !circle) return;
+
+    // SVG circle circumference: 2π × r = 2π × 15.9155 ≈ 100
+    const CIRCUMFERENCE = 100;
+
+    function updateScrollProgress() {
+        const scrollTop    = window.scrollY || document.documentElement.scrollTop;
+        const docHeight    = document.documentElement.scrollHeight - window.innerHeight;
+        const scrollRatio  = docHeight > 0 ? scrollTop / docHeight : 0;
+
+        // Show / hide button (appears after 300px)
+        if (scrollTop > 300) {
+            btn.classList.add('visible');
+        } else {
+            btn.classList.remove('visible');
+            btn.classList.remove('at-bottom');
+        }
+
+        // Update circular progress ring (dashoffset goes from 100 → 0 as you scroll down)
+        const offset = CIRCUMFERENCE - (scrollRatio * CIRCUMFERENCE);
+        circle.style.strokeDashoffset = offset.toFixed(2);
+
+        // Pulse effect when near the very bottom (≥ 95 %)
+        if (scrollRatio >= 0.95) {
+            btn.classList.add('at-bottom');
+        } else {
+            btn.classList.remove('at-bottom');
+        }
+    }
+
+    // Click → smooth scroll to top
+    btn.addEventListener('click', function () {
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+
+    // Throttled scroll listener
+    let ticking = false;
+    window.addEventListener('scroll', function () {
+        if (!ticking) {
+            requestAnimationFrame(function () {
+                updateScrollProgress();
+                ticking = false;
+            });
+            ticking = true;
+        }
+    }, { passive: true });
+
+    // Initialize on load
+    updateScrollProgress();
 }
